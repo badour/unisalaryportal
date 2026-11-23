@@ -294,179 +294,12 @@
                  // إعادة التهيئة
                  $(this).select2({
                      width: '100%',
-                     placeholder: "اختر حساب",
+                     placeholder: "اختر التصنيف",
                      placeholder: "",
                      allowClear: true
                  });
              });
          });
-
-         function escapeHtml(value) {
-             return String(value == null ? '' : value)
-                 .replace(/&/g, '&amp;')
-                 .replace(/</g, '&lt;')
-                 .replace(/>/g, '&gt;')
-                 .replace(/"/g, '&quot;');
-         }
-
-         function applyPrintColumnWidths($table) {
-             var $headerCells = $table.find('thead th');
-             if (!$headerCells.length) {
-                 $headerCells = $table.find('tr').first().children('th, td');
-             }
-
-             var weights = [];
-             var total = 0;
-             $headerCells.each(function () {
-                 var text = $(this).text().replace(/\s+/g, ' ').trim();
-                 var weight = 0.8;
-                 if (text === '#' || text.length === 0) {
-                     weight = 0.45;
-                 } else if (/توقيع/.test(text)) {
-                     weight = 1.25;
-                 } else if (/تفاصيل|ملاحظات/.test(text)) {
-                     weight = 2.3;
-                 } else if (/الاسم/.test(text)) {
-                     weight = 1.7;
-                 } else if (/الوظيفة|القسم/.test(text)) {
-                     weight = 1.55;
-                 } else if (/تاريخ|الحالة/.test(text)) {
-                     weight = 0.95;
-                 }
-                 weights.push(weight);
-                 total += weight;
-             });
-
-             if (!weights.length || !total) {
-                 return;
-             }
-
-             var cols = weights.map(function (weight) {
-                 return '<col style="width:' + ((weight / total) * 100).toFixed(2) + '%">';
-             }).join('');
-
-             $table.find('colgroup').remove();
-             $table.prepend('<colgroup>' + cols + '</colgroup>');
-         }
-
-         function preparePrintTable($table) {
-             $table.removeAttr('id');
-             $table.find('[id]').removeAttr('id');
-             $table.removeAttr('style');
-             $table.attr('dir', 'rtl');
-             $table.find('th, td').each(function () {
-                 this.style.whiteSpace = 'normal';
-                 this.style.wordBreak = 'break-word';
-                 this.style.overflowWrap = 'anywhere';
-                 this.style.overflow = 'visible';
-                 this.style.textOverflow = 'clip';
-                 this.style.width = 'auto';
-                 this.style.maxWidth = 'none';
-                 this.style.height = 'auto';
-             });
-             $table.find('.sorting, .sorting_asc, .sorting_desc')
-                 .removeClass('sorting sorting_asc sorting_desc');
-             applyPrintColumnWidths($table);
-         }
-
-         function printAllGridViews() {
-             var $tables = $('table.gridview-table').filter(function () {
-                 return $(this).closest('.dataTables_scrollHead, .dataTables_scrollFoot').length === 0;
-             });
-
-             if (!$tables.length) {
-                 window.alert('لا توجد جداول للطباعة');
-                 return;
-             }
-
-             var restores = [];
-             var sections = [];
-
-             try {
-                 $tables.each(function () {
-                     var $table = $(this);
-                     if ($.fn.dataTable && $.fn.dataTable.isDataTable(this)) {
-                         var dt = $table.DataTable();
-                         var info = dt.page.info();
-                         var previousLength = info.length;
-                         var previousPage = info.page;
-                         var previousSearch = dt.search();
-                         var rowCount = dt.rows({ search: 'none' }).count();
-                         restores.push(function () {
-                             dt.search(previousSearch).page.len(previousLength).page(previousPage).draw(false);
-                         });
-                         dt.search('').page.len(rowCount > 0 ? rowCount : -1).draw(false);
-                     }
-
-                     var $clone = $table.clone();
-                     preparePrintTable($clone);
-                     sections.push($clone.prop('outerHTML'));
-                 });
-             } finally {
-                 restores.forEach(function (restore) {
-                     restore();
-                 });
-             }
-
-             var classification = $('#<%= DropDownList2.ClientID %>').val() || '';
-             var department = $('#<%= DropDownList1.ClientID %>').val() || '';
-             var dateFrom = $('#<%= TextBox1.ClientID %>').val() || '';
-             var dateTo = $('#<%= TextBox2.ClientID %>').val() || '';
-             if (!department || department === '*') {
-                 department = 'الكل';
-             }
-
-             var html = ''
-                 + '<!DOCTYPE html>'
-                 + '<html lang="ar" dir="rtl">'
-                 + '<head>'
-                 + '<meta charset="utf-8">'
-                 + '<title>طباعة قائمة الراتب</title>'
-                 + '<style>'
-                 + '@page { size: A3 landscape; margin: 7mm; }'
-                 + '* { box-sizing: border-box; }'
-                 + 'html, body { margin: 0; padding: 0; direction: rtl; text-align: right; color: #000; background: #fff; font-family: Tahoma, "Segoe UI", Arial, sans-serif; }'
-                 + '.print-header { margin: 0 0 8px; }'
-                 + '.print-header h1 { margin: 0 0 6px; font-size: 16pt; text-align: center; }'
-                 + '.meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 18px; font-size: 10pt; }'
-                 + 'table { width: 100% !important; max-width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; direction: rtl; page-break-after: auto; }'
-                 + 'th, td { border: 0.6pt solid #000 !important; padding: 3px 4px !important; vertical-align: top !important; text-align: center !important; white-space: normal !important; word-wrap: break-word !important; overflow-wrap: anywhere !important; word-break: break-word !important; overflow: visible !important; text-overflow: clip !important; height: auto !important; max-width: none !important; font-size: 8.5pt !important; line-height: 1.35 !important; }'
-                 + 'thead { display: table-header-group; }'
-                 + 'thead th { background: #e8eef6 !important; font-weight: bold; font-size: 8pt !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }'
-                 + 'tfoot { display: table-row-group; }'
-                 + 'tfoot th, tfoot td { font-weight: bold; background: #f3f3f3 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }'
-                 + 'thead tr { page-break-inside: avoid; break-inside: avoid; }'
-                 + 'table.dataTable thead .sorting:before, table.dataTable thead .sorting:after,'
-                 + 'table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after,'
-                 + 'table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after { content: none !important; display: none !important; }'
-                 + '</style>'
-                 + '</head>'
-                 + '<body>'
-                 + '<div class="print-header">'
-                 + '<h1>قائمة الراتب</h1>'
-                 + '<div class="meta">'
-                 + '<div><strong>التصنيف:</strong> ' + escapeHtml(classification) + '</div>'
-                 + '<div><strong>القسم:</strong> ' + escapeHtml(department) + '</div>'
-                 + '<div><strong>الفترة:</strong> ' + escapeHtml(dateFrom || '—') + ' — ' + escapeHtml(dateTo || '—') + '</div>'
-                 + '<div><strong>تاريخ الطباعة:</strong> ' + escapeHtml(new Date().toLocaleString()) + '</div>'
-                 + '<div><strong>مقاس الورق:</strong> A3 أفقي</div>'
-                 + '</div>'
-                 + '</div>'
-                 + sections.join('<div style="height:12px"></div>')
-                 + '<script>window.onload=function(){window.focus();window.print();};<\/script>'
-                 + '</body></html>';
-
-             var printWindow = window.open('', '_blank');
-             if (!printWindow) {
-                 window.alert('يرجى السماح بالنوافذ المنبثقة حتى تتم الطباعة');
-                 return;
-             }
-
-             printWindow.document.open();
-             printWindow.document.write(html);
-             printWindow.document.close();
-         }
-
 
          $(document).ready(function () {
              var table = $('#<%= tableExport.ClientID %>').DataTable({
@@ -510,9 +343,123 @@
                      { extend: 'copyHtml5', text: 'نسخ' },
                      { extend: 'excelHtml5', text: 'Excel' },
                      {
+                         extend: 'print',
                          text: 'طباعة',
-                         action: function () {
-                             printAllGridViews();
+                         footer: true,
+                         exportOptions: {
+                             columns: ':visible',
+                             stripHtml: false,
+                             modifier: {
+                                 page: 'all',
+                                 search: 'none'
+                             }
+                         },
+                         customize: function (win) {
+
+                             // اتجاه الصفحة RTL ومحاذاة يمين
+
+
+                             $(win.document.body)
+                                 .css('direction', 'rtl')
+                                 .css('text-align', 'right')
+                                 .css('font-family', 'Tahoma, "Segoe UI", Arial');
+
+
+                             // اعكس ترتيب الأعمدة بصريًا (اختياري لو تحب يمين>يسار)
+                             $(win.document.body).find('table')
+                                 .attr('dir', 'rtl')
+                                 .addClass('compact')
+                                 .css('font-size', '12px');
+
+                             // رأس مطبوعات مخصص
+                             var rptTitle = $('#<%= DropDownList1.ClientID %>').val();
+                          var orgName = $('#<%= DropDownList2.ClientID %>').val();
+      var dateFrom = $('#<%= TextBox1.ClientID %>').val() || '';
+      var dateTo = $('#<%= TextBox2.ClientID %>').val() || '';
+
+
+                             $(win.document.body).find('h1.dt-print-title').remove(); // ⬅️ إزالة العنوان قبل الجدول
+                             // أضف هيدر غني قبل الجدول
+                             $(win.document.body).prepend(
+                                 '<div style="margin-bottom:15px; ">' +
+                                 '<div style="margin-top:6px;">' +
+                                 '<div><strong>تصنيف المنتسبين :</strong> ' + orgName + '</div>' +
+                                 '<div><strong>الفترة:</strong> ' + (dateFrom || '—') + ' — ' + (dateTo || '—') + '</div>' +
+                                 '<div><strong>تاريخ الطباعة:</strong> ' + new Date().toLocaleString() + '</div>' +
+                                 '</div>' +
+                                 '</div>'
+                             );
+
+
+
+                             // تحسين مظهر الجدول المطبوع
+                             var $tbl = $(win.document.body).find('table');
+                             $tbl.css('width', '100%');
+                             $tbl.css('table-layout', 'fixed');
+                             $tbl.find('thead th, tbody td').css({
+                                 'text-align': 'right',
+                                 'vertical-align': 'top',
+                                 'white-space': 'normal',
+                                 'word-wrap': 'break-word',
+                                 'overflow-wrap': 'anywhere',
+                                 'padding': '6px 8px'
+
+                             });
+                             // تأكد من ظهور الفوتر بوضوح
+                             $tbl.find('tfoot').css({
+                                 'display': 'table-row-group'
+
+
+                             });
+
+                             $tbl.find('tfoot th, tfoot td').css({
+                                 'font-weight': 'bold',
+                                 'border-top': '2px solid #000',
+                                 'white-space': 'normal',
+                                 'text-align': 'right'
+                             });
+
+                             var style = `
+          <style>
+              @page { size: A3 landscape; margin: 7mm; }
+
+              thead { display: table-header-group; }
+
+              table {
+                  width: 100% !important;
+                  table-layout: fixed !important;
+              }
+
+              th, td {
+                  white-space: normal !important;
+                  word-wrap: break-word !important;
+                  overflow-wrap: anywhere !important;
+                  word-break: break-word !important;
+                  overflow: visible !important;
+                  height: auto !important;
+              }
+
+              /* منع تكرار الفوتر بكل صفحة */
+              tfoot {
+                  display: table-row-group !important;
+              }
+
+              tfoot tr {
+                  page-break-inside: avoid;
+              }
+
+              tfoot td, tfoot th {
+                  font-weight: bold;
+                  border-top: 2px solid #000;
+                  background: #f3f3f3;
+                  white-space: normal !important;
+              }
+          </style>
+      `;
+
+                             $(win.document.head).append(style);
+
+
                          }
                      },
                  ],
